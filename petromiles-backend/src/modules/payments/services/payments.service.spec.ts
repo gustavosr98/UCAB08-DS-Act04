@@ -2,6 +2,7 @@ import { BadRequestException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { ConfigService } from '@nestjs/config';
 
 import { PaymentsService } from './payments.service';
 import { PaymentProviderService } from '@/modules/payment-provider/payment-provider.service';
@@ -9,6 +10,9 @@ import { TransactionService } from '@/modules/transaction/services/transaction.s
 import { PointsConversionService } from '@/modules/management/services/points-conversion.service';
 import { ThirdPartyInterestService } from '@/modules/management/services/third-party-interest.service';
 import { PlatformInterestService } from '@/modules/management/services/platform-interest.service';
+import { UserClientService } from '@/modules/user/services/user-client.service';
+import { MailsService } from '@/modules/mails/mails.service';
+import { SuscriptionService } from '@/modules/suscription/service/suscription.service';
 
 import { Transaction } from '@/entities/transaction.entity';
 import { ClientBankAccount } from '@/entities/client-bank-account.entity';
@@ -24,6 +28,8 @@ import { UserModule } from '@/modules/user/user.module';
 import { ManagementModule } from '@/modules/management/management.module';
 import { PaymentProviderModule } from '@/modules/payment-provider/payment-provider.module';
 import { MailsModule } from '@/modules/mails/mails.module';
+import { WinstonModule } from 'nest-winston';
+import createOptions from '../../../logger/winston/winston-config';
 
 describe('PaymentsService', () => {
   let PaymentsServiceMock: jest.Mock<Partial<PaymentsService>>;
@@ -76,16 +82,21 @@ describe('PaymentsService', () => {
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       imports: [
-        TransactionModule,
-        BankAccountModule,
-        SuscriptionModule,
-        UserModule,
-        ManagementModule,
-        PaymentProviderModule,
-        MailsModule,
+        WinstonModule.forRoot(
+          createOptions({ fileName: 'petromiles-global.log' }),
+        ),
       ],
       providers: [
         PaymentsService,
+        TransactionService,
+        PaymentProviderService,
+        ThirdPartyInterestService,
+        PlatformInterestService,
+        UserClientService,
+        PointsConversionService,
+        MailsService,
+        ConfigService,
+        SuscriptionService,
         {
           provide: getRepositoryToken(ClientBankAccount),
           useValue: new RepositoryMock(),
