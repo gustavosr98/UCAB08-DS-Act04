@@ -1,4 +1,4 @@
-const { Builder, By, Key, until } = require("selenium-webdriver");
+import { Builder, By, Key, until } from "selenium-webdriver";
 
 describe("[E2E] As a client I want to exchange points so I can get its dollar equivalent into my bank account", () => {
   let driver;
