@@ -31,8 +31,8 @@ describe("[E2E] As a client I want to exchange points so I can get its dollar eq
         )
       )
       .click();
-    await driver.findElement(By.id("withdraw-points-inputs")).click();
-    await driver.findElement(By.id("withdraw-points-inputs")).sendKeys("5000");
+    await driver.findElement(By.id("withdraw-points-input")).click();
+    await driver.findElement(By.id("withdraw-points-input")).sendKeys("5000");
     await driver.findElement(By.css(".v-select__selections")).click();
     await driver.findElement(By.xpath("//body/div/div[2]/div/div")).click();
     await driver.findElement(By.css(".col .v-btn__content")).click();
