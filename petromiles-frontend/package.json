@@ -30,6 +30,7 @@
     "minify-css-string": "^1.0.0",
     "register-service-worker": "^1.7.1",
     "roboto-fontface": "*",
+    "selenium-webdriver": "^4.0.0-alpha.7",
     "vue": "^2.6.11",
     "vue-chartjs": "^3.5.0",
     "vue-html2pdf": "^1.3.6",
