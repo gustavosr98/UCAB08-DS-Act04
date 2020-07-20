@@ -16,7 +16,6 @@ import { PlatformInterestService } from '@/modules/management/services/platform-
 import { PaymentProviderService } from '@/modules/payment-provider/payment-provider.service';
 import { MailsService } from '@/modules/mails/mails.service';
 import { UserClientService } from '@/modules/user/services/user-client.service';
-import { ClientBankAccountService } from '@/modules/bank-account/services/client-bank-account.service';
 import { PointsConversionService } from '@/modules/management/services/points-conversion.service';
 import { SuscriptionService } from '@/modules/suscription/service/suscription.service';
 
@@ -38,7 +37,6 @@ import { Interest } from '@/modules/payments/interest.interface';
 export class PaymentsService {
   constructor(
     @Inject(WINSTON_MODULE_PROVIDER) private logger: Logger,
-    private clientBankAccountService: ClientBankAccountService,
     @InjectRepository(ClientBankAccount)
     private clientBankAccountRepository: Repository<ClientBankAccount>,
     private transactionService: TransactionService,
@@ -172,12 +170,19 @@ export class PaymentsService {
     amountToCharge,
     points,
   ): Promise<Transaction> {
+    console.log('user', user);
+    console.log('idClientBankAccount', idClientBankAccount);
+    console.log('amount', amount);
+    console.log('amountToCharge', amountToCharge);
+    console.log('points', points);
     const interests = await this.getInterests(
       TransactionType.WITHDRAWAL,
       PlatformInterest.WITHDRAWAL,
     );
+    console.log('interests', interests);
     const onePointToDollars = (await this.getOnePointToDollars())
       .onePointEqualsDollars;
+    console.log('onePointToDollars', onePointToDollars);
 
     const rawCost = Math.round(points * onePointToDollars * 10000) / 10000;
     let result = rawCost;
@@ -199,6 +204,7 @@ export class PaymentsService {
     const clientBankAccount = await this.clientBankAccountRepository.findOne({
       idClientBankAccount,
     });
+    console.log('clientBankAccount', clientBankAccount);
 
     if (await this.verifyEnoughPoints(id, amount)) {
       await this.paymentProviderService.updateBankAccountOfAnAccount(
@@ -216,11 +222,15 @@ export class PaymentsService {
         source_type: 'bank_account',
       });
 
-      return this.transactionService.createWithdrawalTransaction(
+      console.log('transfer', transfer);
+
+      const tran = await this.transactionService.createWithdrawalTransaction(
         clientBankAccount,
         amount,
         transfer.id,
       );
+      console.log('tran', tran);
+      return tran;
     }
 
     this.logger.error(
