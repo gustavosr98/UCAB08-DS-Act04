@@ -1,5 +1,7 @@
 import { Builder, By, Key, until } from "selenium-webdriver";
 
+jest.setTimeout(3000000);
+
 describe("[E2E] As a client I want to exchange points so I can get its dollar equivalent into my bank account", () => {
   let driver;
   let vars;
@@ -7,14 +9,14 @@ describe("[E2E] As a client I want to exchange points so I can get its dollar eq
   beforeEach(async () => {
     driver = await new Builder().forBrowser("firefox").build();
     vars = {};
-  }).compile();
+  });
 
   afterEach(async () => {
     await driver.quit();
   });
 
   it("[Selenium] on Firefox", async () => {
-    await driver.get("http://localhost:8080/dashboard");
+    await driver.get("http://localhost:8081/sell-points");
     await driver
       .manage()
       .window()
