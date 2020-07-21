@@ -26,43 +26,19 @@ describe("[E2E] As a client I want to exchange points so I can get its dollar eq
       .findElement(By.id("input-27"))
       .sendKeys("jaandrade.17@est.ucab.edu.ve");
     await driver.findElement(By.id("password")).click();
-    {
-      const element = await driver.findElement(By.css(".theme--dark"));
-      await driver
-        .actions({ bridge: true })
-        .moveToElement(element)
-        .perform();
-    }
     await driver.findElement(By.id("password")).sendKeys("prueba1234");
     await driver.findElement(By.css(".theme--dark")).click();
-    {
-      const element = await driver.findElement(By.CSS_SELECTOR, "body");
-      await driver
-        .actions({ bridge: true })
-        .moveToElement(element, 0, 0)
-        .perform();
-    }
-    {
-      const element = await driver.findElement(
+    await driver.wait(
+      until.elementLocated(
         By.css("div:nth-child(2) > .v-main .v-app-bar__nav-icon .v-icon")
-      );
-      await driver
-        .actions({ bridge: true })
-        .moveToElement(element)
-        .perform();
-    }
+      )
+    );
+    await driver.sleep(10000).then(async function() {});
     await driver
       .findElement(
         By.css("div:nth-child(2) > .v-main .v-app-bar__nav-icon .v-icon")
       )
       .click();
-    {
-      const element = await driver.findElement(By.CSS_SELECTOR, "body");
-      await driver
-        .actions({ bridge: true })
-        .moveToElement(element, 0, 0)
-        .perform();
-    }
     await driver
       .findElement(
         By.css(
@@ -70,57 +46,20 @@ describe("[E2E] As a client I want to exchange points so I can get its dollar eq
         )
       )
       .click();
-    await driver
-      .findElement(By.css(".v-overlay--active > .v-overlay__scrim"))
-      .click();
+    await driver.wait(until.elementLocated(By.id("input-197")));
+    await driver.sleep(10000).then(async function() {});
     await driver.findElement(By.id("input-197")).click();
     await driver.findElement(By.id("input-197")).sendKeys("2000");
     await driver.findElement(By.css(".v-select__selections")).click();
     await driver.findElement(By.id("list-item-228-0")).click();
-    {
-      const element = await driver.findElement(By.css(".col .v-btn__content"));
-      await driver
-        .actions({ bridge: true })
-        .moveToElement(element)
-        .perform();
-    }
     await driver.findElement(By.css(".col .v-btn__content")).click();
-    {
-      const element = await driver.findElement(By.CSS_SELECTOR, "body");
-      await driver
-        .actions({ bridge: true })
-        .moveToElement(element, 0, 0)
-        .perform();
-    }
-    {
-      const element = await driver.findElement(
-        By.css(".success > .v-btn__content")
-      );
-      await driver
-        .actions({ bridge: true })
-        .moveToElement(element)
-        .perform();
-    }
     await driver.findElement(By.css(".success > .v-btn__content")).click();
-    {
-      const element = await driver.findElement(By.CSS_SELECTOR, "body");
-      await driver
-        .actions({ bridge: true })
-        .moveToElement(element, 0, 0)
-        .perform();
-    }
-    {
-      const element = await driver.findElement(
-        By.css(".v-btn--router > .v-btn__content")
-      );
-      await driver
-        .actions({ bridge: true })
-        .moveToElement(element)
-        .perform();
-    }
+
+    await driver.wait(
+      until.elementLocated(By.css(".v-btn--router > .v-btn__content"))
+    );
     await driver
       .findElement(By.css(".v-btn--router > .v-btn__content"))
       .click();
-    await driver.close();
   });
 });
