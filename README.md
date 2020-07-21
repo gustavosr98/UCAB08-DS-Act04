@@ -31,7 +31,9 @@ Our web app can be found at https://petromiles-frontend.herokuapp.com/ while our
 
 1. Descarga el driver siguiente para que la prueba pueda correr en Firefox: ![geckodriver](https://github.com/mozilla/geckodriver/releases/tag/v0.25.0)
 
-2. Ejecuta los siguientes formatos
+2. Mueve el archivo ejecutable descargado a la ruta PATH de tu sistema operativo. En el siguiente link se puede ver cual es posible que sea: ![PATH](https://en.wikipedia.org/wiki/PATH_%28variable%29)
+
+3. Ejecuta los siguientes formatos
 
 ```bash
 cd petromiles-frontend/ # Move to frontend project directory
