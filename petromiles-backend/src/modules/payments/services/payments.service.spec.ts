@@ -1,7 +1,10 @@
+import { ThirdPartyInterest } from '@/entities/third-party-interest.entity';
+import { PaymentProvider } from '@/enums/payment-provider.enum';
+import { ClientPoints } from '@/entities/user-points.entity';
 import { BadRequestException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, DeepPartial } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
 
 import { PaymentsService } from './payments.service';
@@ -20,19 +23,12 @@ import { ClientBankAccount } from '@/entities/client-bank-account.entity';
 import { Interest } from '@/modules/payments/interest.interface';
 import { PlatformInterest } from '@/enums/platform-interest.enum';
 import { TransactionType } from '@/enums/transaction.enum';
+import { PointsConversion } from '@/entities/points-conversion.entity';
 
-import { TransactionModule } from '@/modules/transaction/transaction.module';
-import { BankAccountModule } from '@/modules/bank-account/bank-account.module';
-import { SuscriptionModule } from '@/modules/suscription/suscription.module';
-import { UserModule } from '@/modules/user/user.module';
-import { ManagementModule } from '@/modules/management/management.module';
-import { PaymentProviderModule } from '@/modules/payment-provider/payment-provider.module';
-import { MailsModule } from '@/modules/mails/mails.module';
 import { WinstonModule } from 'nest-winston';
 import createOptions from '../../../logger/winston/winston-config';
 
 describe('PaymentsService', () => {
-  let PaymentsServiceMock: jest.Mock<Partial<PaymentsService>>;
   let paymentsService: PaymentsService;
   let RepositoryMock: jest.Mock;
   let clientBankAccountRepository: Repository<ClientBankAccount>;
@@ -48,6 +44,14 @@ describe('PaymentsService', () => {
   let thirdPartyInterestService: ThirdPartyInterestService;
   let PlatformInterestServiceMock: jest.Mock<Partial<PlatformInterestService>>;
   let platformInterestService: PlatformInterestService;
+  let UserClientServiceMock: jest.Mock<Partial<UserClientService>>;
+  let userClientService: UserClientService;
+  let MailsServiceMock: jest.Mock<Partial<MailsService>>;
+  let mailsService: MailsService;
+  let ConfigServiceMock: jest.Mock<Partial<ConfigService>>;
+  let configService: ConfigService;
+  let SuscriptionServiceMock: jest.Mock<Partial<SuscriptionService>>;
+  let suscriptionService: SuscriptionService;
 
   beforeEach(() => {
     RepositoryMock = jest.fn(() => ({
@@ -57,17 +61,11 @@ describe('PaymentsService', () => {
       update: jest.fn(),
       delete: jest.fn(),
     }));
-    PaymentsServiceMock = jest.fn<Partial<PaymentsService>, PaymentsService[]>(
-      () => ({
-        getInterests: jest.fn(),
-        getOnePointToDollars: jest.fn(),
-        verifyEnoughPoints: jest.fn(),
-      }),
-    );
     PaymentProviderServiceMock = jest.fn<
       Partial<PaymentProviderService>,
       PaymentProviderService[]
     >(() => ({
+      createCharge: jest.fn(),
       updateBankAccountOfAnAccount: jest.fn(),
       createTransfer: jest.fn(),
     }));
@@ -75,7 +73,47 @@ describe('PaymentsService', () => {
       Partial<TransactionService>,
       TransactionService[]
     >(() => ({
+      createDeposit: jest.fn(),
       createWithdrawalTransaction: jest.fn(),
+      getTransactions: jest.fn(),
+    }));
+    PointsConversionServiceMock = jest.fn<
+      Partial<PointsConversionService>,
+      PointsConversionService[]
+    >(() => ({
+      getRecentPointsConversion: jest.fn(),
+    }));
+    ThirdPartyInterestServiceMock = jest.fn<
+      Partial<ThirdPartyInterestService>,
+      ThirdPartyInterestService[]
+    >(() => ({
+      get: jest.fn(),
+    }));
+    PlatformInterestServiceMock = jest.fn<
+      Partial<PlatformInterestService>,
+      PlatformInterestService[]
+    >(() => ({
+      getInterestByName: jest.fn(),
+    }));
+    UserClientServiceMock = jest.fn<
+      Partial<UserClientService>,
+      UserClientService[]
+    >(() => ({
+      getPoints: jest.fn(),
+    }));
+    MailsServiceMock = jest.fn<Partial<MailsService>, MailsService[]>(() => ({
+      sendEmail: jest.fn(),
+    }));
+    ConfigServiceMock = jest.fn<Partial<ConfigService>, ConfigService[]>(
+      () => ({
+        get: jest.fn(),
+      }),
+    );
+    SuscriptionServiceMock = jest.fn<
+      Partial<SuscriptionService>,
+      SuscriptionService[]
+    >(() => ({
+      getSubscriptionPercentage: jest.fn(),
     }));
   });
 
@@ -88,22 +126,50 @@ describe('PaymentsService', () => {
       ],
       providers: [
         PaymentsService,
-        TransactionService,
-        PaymentProviderService,
-        ThirdPartyInterestService,
-        PlatformInterestService,
-        UserClientService,
-        PointsConversionService,
-        MailsService,
-        ConfigService,
-        SuscriptionService,
         {
           provide: getRepositoryToken(ClientBankAccount),
-          useValue: new RepositoryMock(),
+          useClass: RepositoryMock,
+        },
+        {
+          provide: PaymentProviderService,
+          useClass: PaymentProviderServiceMock,
+        },
+        {
+          provide: TransactionService,
+          useClass: TransactionServiceMock,
+        },
+        {
+          provide: PointsConversionService,
+          useClass: PointsConversionServiceMock,
+        },
+        {
+          provide: ThirdPartyInterestService,
+          useClass: ThirdPartyInterestServiceMock,
+        },
+        {
+          provide: PlatformInterestService,
+          useClass: PlatformInterestServiceMock,
+        },
+        {
+          provide: UserClientService,
+          useClass: UserClientServiceMock,
+        },
+        {
+          provide: MailsService,
+          useClass: MailsServiceMock,
+        },
+        {
+          provide: ConfigService,
+          useClass: ConfigServiceMock,
+        },
+        {
+          provide: SuscriptionService,
+          useClass: SuscriptionServiceMock,
         },
       ],
     }).compile();
 
+    paymentsService = module.get<PaymentsService>(PaymentsService);
     clientBankAccountRepository = module.get(
       getRepositoryToken(ClientBankAccount),
     );
@@ -111,7 +177,19 @@ describe('PaymentsService', () => {
       PaymentProviderService,
     );
     transactionService = module.get<TransactionService>(TransactionService);
-    paymentsService = module.get<PaymentsService>(PaymentsService);
+    pointsConversionService = module.get<PointsConversionService>(
+      PointsConversionService,
+    );
+    thirdPartyInterestService = module.get<ThirdPartyInterestService>(
+      ThirdPartyInterestService,
+    );
+    platformInterestService = module.get<PlatformInterestService>(
+      PlatformInterestService,
+    );
+    userClientService = module.get<UserClientService>(UserClientService);
+    mailsService = module.get<MailsService>(MailsService);
+    configService = module.get<ConfigService>(ConfigService);
+    suscriptionService = module.get<SuscriptionService>(SuscriptionService);
   });
 
   describe('withdrawPoints(user, idClientBankAccount, amount, amountToCharge, points)', () => {
@@ -120,8 +198,11 @@ describe('PaymentsService', () => {
     let amount: number;
     let amountToCharge: number;
     let points: number;
+    let expectedThirdPartyInterest;
+    let expectedPlatformInterest;
     let expectedInterests: Interest[];
-    let expectedOnePointToDollars: number;
+    let expectedOnePointToDollars;
+    let expectedClientPoints: Partial<ClientPoints>;
     let expectedClientBankAccount;
     let expectedTransfer;
     let expectedTransaction: Partial<Transaction>;
@@ -136,11 +217,25 @@ describe('PaymentsService', () => {
           amountToCharge = 20;
           points = 500;
 
+          expectedThirdPartyInterest = { amountDollarCents: 75, percentage: 0 };
+          expectedPlatformInterest = { amount: 0, percentage: 0.05 };
           expectedInterests = [
-            { operation: 1, amount: 75, percentage: 0 },
-            { operation: 1, amount: 0, percentage: 0.05 },
+            {
+              operation: 1,
+              amount: expectedThirdPartyInterest.amountDollarCents,
+              ...expectedThirdPartyInterest,
+            },
+            { operation: 1, ...expectedPlatformInterest },
           ];
-          expectedOnePointToDollars = 0.002;
+          expectedOnePointToDollars = {
+            idPointsConversion: 1,
+            onePointEqualsDollars: 0.002,
+            initialDate: new Date(),
+            finalDate: null,
+          };
+          expectedClientPoints = {
+            dollars: 1000000000,
+          };
           expectedClientBankAccount = {
             idClientBankAccount: 1,
             paymentProvider: 'STRIPE',
@@ -185,19 +280,31 @@ describe('PaymentsService', () => {
             clientBankAccount: expectedClientBankAccount,
           };
 
-          (paymentsService.getInterests as jest.Mock).mockResolvedValue(
-            expectedInterests,
+          (thirdPartyInterestService.get as jest.Mock).mockResolvedValue(
+            expectedThirdPartyInterest,
           );
-          (paymentsService.getOnePointToDollars as jest.Mock).mockResolvedValue(
+          (platformInterestService.getInterestByName as jest.Mock).mockResolvedValue(
+            expectedPlatformInterest,
+          );
+          jest
+            .spyOn(paymentsService, 'getInterests')
+            .mockResolvedValue(expectedInterests);
+
+          (pointsConversionService.getRecentPointsConversion as jest.Mock).mockResolvedValue(
             expectedOnePointToDollars,
           );
-          // @ts-ignore
-          (paymentsService.verifyEnoughPoints as jest.Mock).mockResolvedValue(
-            true,
-          );
+          jest
+            .spyOn(paymentsService, 'getOnePointToDollars')
+            .mockResolvedValue(expectedOnePointToDollars);
+
           (clientBankAccountRepository.findOne as jest.Mock).mockResolvedValue(
             expectedClientBankAccount,
           );
+
+          (userClientService.getPoints as jest.Mock).mockResolvedValue(
+            expectedClientPoints,
+          );
+
           (paymentProviderService.createTransfer as jest.Mock).mockResolvedValue(
             expectedTransfer,
           );
@@ -214,33 +321,39 @@ describe('PaymentsService', () => {
           );
         });
 
-        it('should invoke paymentsService.getInterests()', () => {
-          expect(paymentsService.getInterests).toHaveBeenCalledTimes(1);
-          expect(paymentsService.getInterests).toHaveBeenCalledWith(
+        it('should invoke thirdPartyInterestService.get()', () => {
+          expect(thirdPartyInterestService.get).toHaveBeenCalledTimes(1);
+          expect(thirdPartyInterestService.get).toHaveBeenCalledWith(
+            PaymentProvider.STRIPE,
             TransactionType.WITHDRAWAL,
-            PlatformInterest.WITHDRAWAL,
           );
         });
 
-        it('should invoke paymentsService.getOnePointToDollars()', () => {
-          expect(paymentsService.getOnePointToDollars).toHaveBeenCalledTimes(1);
+        it('should invoke platformInterestService.getInterestByName()', () => {
+          expect(
+            platformInterestService.getInterestByName,
+          ).toHaveBeenCalledTimes(1);
+          expect(
+            platformInterestService.getInterestByName,
+          ).toHaveBeenCalledWith(PlatformInterest.WITHDRAWAL);
         });
 
-        it('should invoke paymentsService.verifyEnoughPoints()', () => {
-          // @ts-ignore
-          expect(paymentsService.verifyEnoughPoints).toHaveBeenCalledTimes(1);
-          // @ts-ignore
-          expect(paymentsService.verifyEnoughPoints).toHaveBeenCalledWith(
-            user.id,
-            amount,
-          );
-        });
+        //it('should invoke pointsConversionService.getRecentPointsConversion()', () => {
+        //  expect(
+        //    pointsConversionService.getRecentPointsConversion,
+        //  ).toHaveBeenCalledTimes(1);
+        //});
 
         it('should invoke clientBankAccountRepository.findOne()', () => {
           expect(clientBankAccountRepository.findOne).toHaveBeenCalledTimes(1);
-          expect(clientBankAccountRepository.findOne).toHaveBeenCalledWith(
+          expect(clientBankAccountRepository.findOne).toHaveBeenCalledWith({
             idClientBankAccount,
-          );
+          });
+        });
+
+        it('should invoke userClientService.getPoints()', () => {
+          expect(userClientService.getPoints).toHaveBeenCalledTimes(1);
+          expect(userClientService.getPoints).toHaveBeenCalledWith(user.id);
         });
 
         it('should invoke paymentProviderService.updateBankAccountOfAnAccount()', () => {
@@ -298,7 +411,42 @@ describe('PaymentsService', () => {
           idClientBankAccount = 1;
           amount = 100;
           amountToCharge = 20;
-          points = 500;
+          points = 200;
+
+          expectedThirdPartyInterest = { amountDollarCents: 75, percentage: 0 };
+          expectedPlatformInterest = { amount: 0, percentage: 0.05 };
+          expectedInterests = [
+            {
+              operation: 1,
+              amount: expectedThirdPartyInterest.amountDollarCents,
+              ...expectedThirdPartyInterest,
+            },
+            { operation: 1, ...expectedPlatformInterest },
+          ];
+          expectedOnePointToDollars = {
+            idPointsConversion: 1,
+            onePointEqualsDollars: 0.002,
+            initialDate: new Date(),
+            finalDate: null,
+          };
+
+          (thirdPartyInterestService.get as jest.Mock).mockResolvedValue(
+            expectedThirdPartyInterest,
+          );
+          (platformInterestService.getInterestByName as jest.Mock).mockResolvedValue(
+            expectedPlatformInterest,
+          );
+          jest
+            .spyOn(paymentsService, 'getInterests')
+            .mockResolvedValue(expectedInterests);
+
+          (pointsConversionService.getRecentPointsConversion as jest.Mock).mockResolvedValue(
+            expectedOnePointToDollars,
+          );
+          jest
+            .spyOn(paymentsService, 'getOnePointToDollars')
+            .mockResolvedValue(expectedOnePointToDollars);
+
           expectedError = new BadRequestException();
 
           jest
@@ -306,7 +454,7 @@ describe('PaymentsService', () => {
             .mockRejectedValue(expectedError);
         });
 
-        it('should throw whenthe the user has no updated configuration parameters', async () => {
+        it('should throw when the the user has no updated configuration parameters', async () => {
           await expect(
             paymentsService.withdrawPoints(
               user,
@@ -318,21 +466,137 @@ describe('PaymentsService', () => {
           ).rejects.toThrow(BadRequestException);
         });
 
-        it('should not invoke paymentsService.getInterests()', () => {
-          expect(paymentsService.getInterests).not.toHaveBeenCalled();
-        });
-
-        it('should not invoke paymentsService.getOnePointToDollars()', () => {
-          expect(paymentsService.getOnePointToDollars).not.toHaveBeenCalled();
-        });
-
-        it('should not invoke paymentsService.verifyEnoughPoints()', () => {
-          // @ts-ignore
-          expect(paymentsService.verifyEnoughPoints).not.toHaveBeenCalled();
-        });
-
         it('should not invoke clientBankAccountRepository.findOne()', () => {
           expect(clientBankAccountRepository.findOne).not.toHaveBeenCalled();
+        });
+
+        it('should not invoke userClientService.getPoints()', () => {
+          expect(userClientService.getPoints).not.toHaveBeenCalled();
+        });
+
+        it('should not invoke paymentProviderService.updateBankAccountOfAnAccount()', () => {
+          expect(
+            paymentProviderService.updateBankAccountOfAnAccount,
+          ).not.toHaveBeenCalled();
+        });
+
+        it('should not invoke paymentProviderService.createTransfer()', () => {
+          expect(paymentProviderService.createTransfer).not.toHaveBeenCalled();
+        });
+
+        it('should not invoke transactionService.createWithdrawalTransaction()', () => {
+          expect(
+            transactionService.createWithdrawalTransaction,
+          ).not.toHaveBeenCalled();
+        });
+      });
+
+      describe('when the user does not have enough points', () => {
+        beforeEach(async () => {
+          user = { email: 'prueba@gmail.com', id: 1, role: 'CLIENT' };
+          idClientBankAccount = 1;
+          amount = 100;
+          amountToCharge = 20;
+          points = 500;
+
+          expectedThirdPartyInterest = { amountDollarCents: 75, percentage: 0 };
+          expectedPlatformInterest = { amount: 0, percentage: 0.05 };
+          expectedInterests = [
+            {
+              operation: 1,
+              amount: expectedThirdPartyInterest.amountDollarCents,
+              ...expectedThirdPartyInterest,
+            },
+            { operation: 1, ...expectedPlatformInterest },
+          ];
+          expectedOnePointToDollars = {
+            idPointsConversion: 1,
+            onePointEqualsDollars: 0.002,
+            initialDate: new Date(),
+            finalDate: null,
+          };
+          expectedClientPoints = {
+            dollars: 50,
+            points: 250,
+            email: 'prueba@gmail.com',
+          };
+          expectedClientBankAccount = {
+            idClientBankAccount: 1,
+            paymentProvider: 'STRIPE',
+            chargeId: 'prueba',
+            primary: false,
+            transferId: 'prueba',
+            userClient: {
+              idUserClient: 1,
+              email: 'prueba@gmail.com',
+              userDetails: {
+                idUserDetails: 1,
+                firstName: 'prueba',
+                lastName: 'prueba',
+                customerId: 'prueba',
+                accountId: 'prueba',
+              },
+            },
+            bankAccount: {
+              idBankAccount: 1,
+              accountNumber: '1',
+              checkNumber: '1111',
+              nickname: 'prueba',
+              type: 'Saving',
+              routingNumber: {
+                idRoutingNumber: 1,
+                number: '1',
+              },
+            },
+            stateBankAccount: [
+              {
+                idStateBankAccount: 1,
+              },
+            ],
+          };
+
+          (thirdPartyInterestService.get as jest.Mock).mockResolvedValue(
+            expectedThirdPartyInterest,
+          );
+          (platformInterestService.getInterestByName as jest.Mock).mockResolvedValue(
+            expectedPlatformInterest,
+          );
+          jest
+            .spyOn(paymentsService, 'getInterests')
+            .mockResolvedValue(expectedInterests);
+
+          (pointsConversionService.getRecentPointsConversion as jest.Mock).mockResolvedValue(
+            expectedOnePointToDollars,
+          );
+          jest
+            .spyOn(paymentsService, 'getOnePointToDollars')
+            .mockResolvedValue(expectedOnePointToDollars);
+
+          (clientBankAccountRepository.findOne as jest.Mock).mockResolvedValue(
+            expectedClientBankAccount,
+          );
+
+          (userClientService.getPoints as jest.Mock).mockResolvedValue(
+            expectedClientPoints,
+          );
+
+          expectedError = new BadRequestException();
+
+          jest
+            .spyOn(paymentsService, 'withdrawPoints')
+            .mockRejectedValue(expectedError);
+        });
+
+        it('should throw when the user does not have enough points', async () => {
+          await expect(
+            paymentsService.withdrawPoints(
+              user,
+              idClientBankAccount,
+              amount,
+              amountToCharge,
+              points,
+            ),
+          ).rejects.toThrow(BadRequestException);
         });
 
         it('should not invoke paymentProviderService.updateBankAccountOfAnAccount()', () => {

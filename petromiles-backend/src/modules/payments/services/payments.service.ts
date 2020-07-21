@@ -170,19 +170,12 @@ export class PaymentsService {
     amountToCharge,
     points,
   ): Promise<Transaction> {
-    console.log('user', user);
-    console.log('idClientBankAccount', idClientBankAccount);
-    console.log('amount', amount);
-    console.log('amountToCharge', amountToCharge);
-    console.log('points', points);
     const interests = await this.getInterests(
       TransactionType.WITHDRAWAL,
       PlatformInterest.WITHDRAWAL,
     );
-    console.log('interests', interests);
     const onePointToDollars = (await this.getOnePointToDollars())
       .onePointEqualsDollars;
-    console.log('onePointToDollars', onePointToDollars);
 
     const rawCost = Math.round(points * onePointToDollars * 10000) / 10000;
     let result = rawCost;
@@ -204,7 +197,6 @@ export class PaymentsService {
     const clientBankAccount = await this.clientBankAccountRepository.findOne({
       idClientBankAccount,
     });
-    console.log('clientBankAccount', clientBankAccount);
 
     if (await this.verifyEnoughPoints(id, amount)) {
       await this.paymentProviderService.updateBankAccountOfAnAccount(
@@ -222,15 +214,11 @@ export class PaymentsService {
         source_type: 'bank_account',
       });
 
-      console.log('transfer', transfer);
-
-      const tran = await this.transactionService.createWithdrawalTransaction(
+      return await this.transactionService.createWithdrawalTransaction(
         clientBankAccount,
         amount,
         transfer.id,
       );
-      console.log('tran', tran);
-      return tran;
     }
 
     this.logger.error(
