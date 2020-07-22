@@ -29,13 +29,29 @@ Our web app can be found at https://petromiles-frontend.herokuapp.com/ while our
 
 ## Prueba E2E relacionada con el retito de puntos
 
+### Equipo para la actividad
+
+- Gustavo Sánchez
+- Javier Andrade
+- Alejandro Jauregui
+
+### Plan de Pruebas
+
+Descargue el documento [`petromiles-frontend/docs/test-plan.pdf`](https://github.com/gustavosr98/UCAB08-DS-Act04/tree/master/petromiles-frontend/docs/test-plan.pdf)
+
+### Prueba manual con Selenium IDE
+
+1. Descargue el archivo [`petromiles-frontend/test/e2e/selenium-ide/sell-points.e2e-selenium.side`](https://github.com/gustavosr98/UCAB08-DS-Act04/tree/master/petromiles-frontend/test/e2e/selenium-ide/sell-points.e2e-selenium.side)
+2. Importe el proyecto en Selenium IDE
+3. Corra la prueba
+
 ### Prueba automatizada con Jest y Selenium WebDriver
 
 Para simplificar la ejecución de la prueba E2E se hara en base al **sistema desplegado y en produccion** en el url https://petromiles-frontend.herokuapp.com/.
 
-1. Descarga el driver siguiente para que la prueba pueda correr en Firefox: ![geckodriver](https://github.com/mozilla/geckodriver/releases/tag/v0.25.0)
+1. Descarga el driver siguiente para que la prueba pueda correr en Firefox: [geckodriver](https://github.com/mozilla/geckodriver/releases/tag/v0.25.0)
 
-2. Mueve el archivo ejecutable descargado a la ruta PATH de tu sistema operativo. En el siguiente link se puede ver cual es posible que sea: ![PATH](https://en.wikipedia.org/wiki/PATH_%28variable%29)
+2. Mueve el archivo ejecutable descargado a la ruta PATH de tu sistema operativo. En el siguiente link se puede ver cual es posible que sea: [PATH](https://en.wikipedia.org/wiki/PATH_%28variable%29)
 
 3. Ejecuta los siguientes comandos
 
@@ -57,9 +73,3 @@ tar -xvzf geckodriver-v0.25.0-linux64.tar.gz # Unzips the compress folder
 chmod +x geckodriver # Gives geckodriver executable permission
 sudo mv geckodriver /usr/local/bin # Moves geckodriver to a known directory by $PATH
 ```
-
-### Prueba manual con Selenium IDE
-
-1. Descargue el archivo `petromiles-frontend/test/e2e/selenium-ide/sell-points.e2e-selenium.side`
-2. Importe el proyecto en Selenium IDE
-3. Corra la prueba
