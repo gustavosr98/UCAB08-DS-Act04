@@ -16,7 +16,6 @@ import { PlatformInterestService } from '@/modules/management/services/platform-
 import { PaymentProviderService } from '@/modules/payment-provider/payment-provider.service';
 import { MailsService } from '@/modules/mails/mails.service';
 import { UserClientService } from '@/modules/user/services/user-client.service';
-import { ClientBankAccountService } from '@/modules/bank-account/services/client-bank-account.service';
 import { PointsConversionService } from '@/modules/management/services/points-conversion.service';
 import { SuscriptionService } from '@/modules/suscription/service/suscription.service';
 
@@ -38,7 +37,6 @@ import { Interest } from '@/modules/payments/interest.interface';
 export class PaymentsService {
   constructor(
     @Inject(WINSTON_MODULE_PROVIDER) private logger: Logger,
-    private clientBankAccountService: ClientBankAccountService,
     @InjectRepository(ClientBankAccount)
     private clientBankAccountRepository: Repository<ClientBankAccount>,
     private transactionService: TransactionService,
@@ -216,7 +214,7 @@ export class PaymentsService {
         source_type: 'bank_account',
       });
 
-      return this.transactionService.createWithdrawalTransaction(
+      return await this.transactionService.createWithdrawalTransaction(
         clientBankAccount,
         amount,
         transfer.id,

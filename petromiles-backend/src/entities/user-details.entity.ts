@@ -26,7 +26,7 @@ export class UserDetails extends BaseEntity {
   firstName: string;
 
   @Column({ nullable: true })
-  middleName: string;
+  middleName?: string;
 
   @Column()
   lastName: string;
